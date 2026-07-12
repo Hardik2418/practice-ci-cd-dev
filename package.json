@@ -1,0 +1,29 @@
+{
+  "name": "bytelogic-chess-tournament",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chess tournament management system built with Express.js and Node.js.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "express",
+    "node",
+    "mongodb",
+    "chess",
+    "tournament"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "mongodb": "^6.18.0"
+  },
+  "devDependencies": {
+    "supertest": "^7.1.4"
+  }
+}

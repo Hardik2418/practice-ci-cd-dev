@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bytelogic Chess Tournament</title>
+    <style>
+      :root {
+        --bg: #f4efe8;
+        --panel: #ffffff;
+        --line: #d7cec2;
+        --text: #222;
+        --muted: #666;
+        --button: #222;
+        --button-text: #fff;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        color: var(--text);
+        background: var(--bg);
+        padding: 24px;
+      }
+
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        padding: 20px;
+      }
+
+      h1, h2 {
+        margin: 0 0 12px;
+      }
+
+      p {
+        margin: 0 0 12px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .section {
+        border-top: 1px solid var(--line);
+        padding-top: 18px;
+        margin-top: 18px;
+      }
+
+      .grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      label {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 6px;
+      }
+
+      input, select, button {
+        font: inherit;
+      }
+
+      input, select {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+
+      button {
+        padding: 10px 14px;
+        border: 0;
+        background: var(--button);
+        color: var(--button-text);
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #666;
+      }
+
+      button.danger {
+        background: #8b2e2e;
+      }
+
+      .row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 12px;
+      }
+
+      th, td {
+        text-align: left;
+        border-bottom: 1px solid var(--line);
+        padding: 8px;
+        font-size: 14px;
+      }
+
+      .message {
+        margin-top: 10px;
+        font-size: 14px;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .stack {
+        display: grid;
+        gap: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Chess Tournament Manager</h1>
+      <p>Simple dashboard for players, tournaments, enrollment, simulation, and rankings.</p>
+
+      <div class="section">
+        <h2>Players</h2>
+        <div class="grid">
+          <div>
+            <label for="playerName">Name</label>
+            <input id="playerName" />
+          </div>
+          <div>
+            <label for="playerRating">Rating</label>
+            <input id="playerRating" type="number" value="1200" />
+          </div>
+          <div>
+            <label for="playerId">Edit Player ID</label>
+            <input id="playerId" />
+          </div>
+        </div>
+        <div class="row">
+          <button id="savePlayer">Save Player</button>
+          <button id="refreshPlayers" class="secondary">Refresh List</button>
+        </div>
+        <div id="playerMessage" class="message"></div>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Rating</th><th>ID</th><th>Action</th></tr>
+          </thead>
+          <tbody id="playerTable"></tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Tournaments</h2>
+        <div class="grid">
+          <div>
+            <label for="tournamentName">Name</label>
+            <input id="tournamentName" />
+          </div>
+          <div>
+            <label for="tournamentStatus">Status</label>
+            <select id="tournamentStatus">
+              <option value="draft">draft</option>
+              <option value="completed">completed</option>
+            </select>
+          </div>
+          <div>
+            <label for="tournamentId">Edit Tournament ID</label>
+            <input id="tournamentId" />
+          </div>
+        </div>
+        <div class="row">
+          <button id="saveTournament">Save Tournament</button>
+          <button id="refreshTournaments" class="secondary">Refresh List</button>
+        </div>
+        <div id="tournamentMessage" class="message"></div>
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Status</th><th>ID</th><th>Action</th></tr>
+          </thead>
+          <tbody id="tournamentTable"></tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Match Simulation</h2>
+        <div class="grid">
+          <div>
+            <label for="simulateTournamentId">Tournament ID</label>
+            <select id="simulateTournamentId"></select>
+          </div>
+          <div>
+            <label for="joinPlayerId">Player ID</label>
+            <select id="joinPlayerId"></select>
+          </div>
+        </div>
+        <div class="row">
+          <button id="addPlayerToTournament">Add Player to Tournament</button>
+          <button id="simulateTournament" class="secondary">Simulate</button>
+          <button id="loadRankings" class="secondary">Load Rankings</button>
+        </div>
+        <div id="matchMessage" class="message"></div>
+        <div id="rankings" class="stack" style="margin-top: 12px;"></div>
+      </div>
+    </main>
+
+    <script>
+      const state = { players: [], tournaments: [] };
+
+      const playerMessage = document.getElementById('playerMessage');
+      const tournamentMessage = document.getElementById('tournamentMessage');
+      const matchMessage = document.getElementById('matchMessage');
+
+      function setMessage(target, text) {
+        target.textContent = text;
+      }
+
+      function selectedTournamentId() {
+        return document.getElementById('simulateTournamentId').value;
+      }
+
+      function selectedPlayerId() {
+        return document.getElementById('joinPlayerId').value;
+      }
+
+      function renderPlayers() {
+        const table = document.getElementById('playerTable');
+        const playerSelect = document.getElementById('joinPlayerId');
+
+        playerSelect.innerHTML = '<option value="">Select player</option>' + state.players.map(player =>
+          '<option value="' + player.id + '">' + player.name + '</option>'
+        ).join('');
+
+        if (!state.players.length) {
+          table.innerHTML = '<tr><td colspan="4" class="muted">No players yet.</td></tr>';
+          return;
+        }
+
+        table.innerHTML = state.players.map(player =>
+          '<tr>' +
+            '<td>' + player.name + '</td>' +
+            '<td>' + player.rating + '</td>' +
+            '<td>' + player.id + '</td>' +
+            '<td>' +
+              '<button class="secondary" data-edit-player="' + player.id + '">Edit</button> ' +
+              '<button class="danger" data-delete-player="' + player.id + '">Delete</button>' +
+            '</td>' +
+          '</tr>'
+        ).join('');
+
+        table.querySelectorAll('[data-edit-player]').forEach(button => {
+          button.addEventListener('click', function () {
+            const player = state.players.find(item => item.id === button.getAttribute('data-edit-player'));
+            document.getElementById('playerId').value = player.id;
+            document.getElementById('playerName').value = player.name;
+            document.getElementById('playerRating').value = player.rating;
+          });
+        });
+
+        table.querySelectorAll('[data-delete-player]').forEach(button => {
+          button.addEventListener('click', async function () {
+            await fetch('/api/players/' + button.getAttribute('data-delete-player'), { method: 'DELETE' });
+            await loadPlayers();
+            await loadTournaments();
+          });
+        });
+      }
+
+      function renderTournaments() {
+        const table = document.getElementById('tournamentTable');
+        const select = document.getElementById('simulateTournamentId');
+
+        select.innerHTML = '<option value="">Select tournament</option>' + state.tournaments.map(tournament =>
+          '<option value="' + tournament.id + '">' + tournament.name + '</option>'
+        ).join('');
+
+        if (!state.tournaments.length) {
+          table.innerHTML = '<tr><td colspan="4" class="muted">No tournaments yet.</td></tr>';
+          return;
+        }
+
+        table.innerHTML = state.tournaments.map(tournament =>
+          '<tr>' +
+            '<td>' + tournament.name + '</td>' +
+            '<td>' + tournament.status + '</td>' +
+            '<td>' + tournament.id + '</td>' +
+            '<td>' +
+              '<button class="secondary" data-edit-tournament="' + tournament.id + '">Edit</button> ' +
+              '<button class="danger" data-delete-tournament="' + tournament.id + '">Delete</button>' +
+            '</td>' +
+          '</tr>'
+        ).join('');
+
+        table.querySelectorAll('[data-edit-tournament]').forEach(button => {
+          button.addEventListener('click', function () {
+            const tournament = state.tournaments.find(item => item.id === button.getAttribute('data-edit-tournament'));
+            document.getElementById('tournamentId').value = tournament.id;
+            document.getElementById('tournamentName').value = tournament.name;
+            document.getElementById('tournamentStatus').value = tournament.status;
+            document.getElementById('simulateTournamentId').value = tournament.id;
+          });
+        });
+
+        table.querySelectorAll('[data-delete-tournament]').forEach(button => {
+          button.addEventListener('click', async function () {
+            await fetch('/api/tournaments/' + button.getAttribute('data-delete-tournament'), { method: 'DELETE' });
+            await loadPlayers();
+            await loadTournaments();
+          });
+        });
+      }
+
+      async function loadPlayers() {
+        const response = await fetch('/api/players');
+        state.players = await response.json();
+        renderPlayers();
+      }
+
+      async function loadTournaments() {
+        const response = await fetch('/api/tournaments');
+        state.tournaments = await response.json();
+        renderTournaments();
+      }
+
+      async function savePlayer() {
+        const id = document.getElementById('playerId').value.trim();
+        const payload = {
+          name: document.getElementById('playerName').value.trim(),
+          rating: Number(document.getElementById('playerRating').value || 1200)
+        };
+
+        const response = await fetch(id ? '/api/players/' + id : '/api/players', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        setMessage(playerMessage, result.message || (id ? 'Player updated.' : 'Player saved.'));
+        await loadPlayers();
+      }
+
+      async function saveTournament() {
+        const id = document.getElementById('tournamentId').value.trim();
+        const payload = {
+          name: document.getElementById('tournamentName').value.trim(),
+          status: document.getElementById('tournamentStatus').value
+        };
+
+        const response = await fetch(id ? '/api/tournaments/' + id : '/api/tournaments', {
+          method: id ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        setMessage(tournamentMessage, result.message || (id ? 'Tournament updated.' : 'Tournament saved.'));
+        await loadTournaments();
+      }
+
+      async function addPlayerToTournament() {
+        const tournamentId = selectedTournamentId();
+        const playerId = selectedPlayerId();
+
+        const response = await fetch('/api/tournaments/' + tournamentId + '/players', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ playerId })
+        });
+
+        const result = await response.json();
+        setMessage(matchMessage, result.message || 'Player added to tournament.');
+      }
+
+      async function simulateTournament() {
+        const tournamentId = selectedTournamentId();
+        const response = await fetch('/api/tournaments/' + tournamentId + '/simulate', { method: 'POST' });
+        const result = await response.json();
+
+        if (!response.ok) {
+          setMessage(matchMessage, result.message || 'Simulation failed.');
+          return;
+        }
+
+        setMessage(matchMessage, 'Champion: ' + result.champion.name);
+        renderRankings(result.rankings);
+        await loadTournaments();
+      }
+
+      async function loadRankings() {
+        const tournamentId = selectedTournamentId();
+        const response = await fetch('/api/tournaments/' + tournamentId + '/rankings');
+        const rankings = await response.json();
+        renderRankings(rankings);
+      }
+
+      function renderRankings(rankings) {
+        const container = document.getElementById('rankings');
+        if (!rankings.length) {
+          container.innerHTML = '<p class="muted">No rankings yet.</p>';
+          return;
+        }
+
+        container.innerHTML = '<h2>Rankings</h2>' +
+          '<table>' +
+            '<thead><tr><th>Rank</th><th>Name</th><th>Wins</th><th>Matches</th></tr></thead>' +
+            '<tbody>' + rankings.map(row =>
+              '<tr>' +
+                '<td>' + row.rank + '</td>' +
+                '<td>' + row.name + '</td>' +
+                '<td>' + row.wins + '</td>' +
+                '<td>' + row.matchesPlayed + '</td>' +
+              '</tr>'
+            ).join('') +
+            '</tbody>' +
+          '</table>';
+      }
+
+      document.getElementById('savePlayer').addEventListener('click', savePlayer);
+      document.getElementById('refreshPlayers').addEventListener('click', loadPlayers);
+      document.getElementById('saveTournament').addEventListener('click', saveTournament);
+      document.getElementById('refreshTournaments').addEventListener('click', loadTournaments);
+      document.getElementById('addPlayerToTournament').addEventListener('click', addPlayerToTournament);
+      document.getElementById('simulateTournament').addEventListener('click', simulateTournament);
+      document.getElementById('loadRankings').addEventListener('click', loadRankings);
+
+      loadPlayers();
+      loadTournaments();
+    </script>
+  </body>
+</html>
