@@ -114,6 +114,66 @@
 // form here 3 jenkins file
 
 
+// pipeline {
+//     agent any
+
+//     environment {
+//         DOCKER_IMAGE = 'hardik2418/chess'
+//         DOCKER_TAG = 'latest'
+//     }
+
+//     stages {
+
+//         stage('Install Dependencies') {
+//             steps {
+//                 bat 'npm ci'
+//             }
+//         }
+
+//         stage('Run Tests') {
+//             steps {
+//                 bat 'npm test'
+//             }
+//         }
+
+//         stage('Build Docker Image') {
+//             steps {
+//                 bat 'docker build -t %DOCKER_IMAGE%:%DOCKER_TAG% .'
+//             }
+//         }
+
+//         stage('Push to Docker Hub') {
+//             steps {
+//                 withCredentials([
+//                     usernamePassword(
+//                         credentialsId: 'dockerhub-credentials',
+//                         usernameVariable: 'DOCKER_USERNAME',
+//                         passwordVariable: 'DOCKER_PASSWORD'
+//                     )
+//                 ]) {
+//                     bat '''
+//                         echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+//                         docker push %DOCKER_IMAGE%:%DOCKER_TAG%
+//                         docker logout
+//                     '''
+//                 }
+//             }
+//         }
+//     }
+
+//     post {
+//         success {
+//             echo 'CI/CD pipeline completed successfully!'
+//         }
+
+//         failure {
+//             echo 'Pipeline failed. Check the Jenkins console output.'
+//         }
+//     }
+// }
+
+// from here new 4
+
 pipeline {
     agent any
 
