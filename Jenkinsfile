@@ -112,6 +112,8 @@
 //                 bat 'docker ps'
 
 // form here 3 jenkins file
+
+
 pipeline {
     agent any
 
@@ -169,7 +171,3 @@ pipeline {
         }
     }
 }
-//             }
-//         }
-//     }
-// }
