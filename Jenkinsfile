@@ -41,7 +41,12 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            npm start > app.log 2>&1 &
+                            if [ -f app.pid ]; then
+                                kill "$(cat app.pid)" || true
+                            fi
+
+                            export JENKINS_NODE_COOKIE=dontKillMe
+                            nohup npm start > app.log 2>&1 &
                             echo $! > app.pid
 
                             for i in $(seq 1 30); do
@@ -57,7 +62,8 @@ pipeline {
                         '''
                     } else {
                         bat '''
-                            powershell -NoProfile -Command "$p = Start-Process -FilePath npm.cmd -ArgumentList 'start' -RedirectStandardOutput app.log -RedirectStandardError app.err -PassThru -WindowStyle Hidden; $p.Id | Set-Content app.pid"
+                            powershell -NoProfile -Command "$listener = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue; if ($listener) { $listener | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue } }"
+                            powershell -NoProfile -Command "$env:JENKINS_NODE_COOKIE = 'dontKillMe'; $p = Start-Process -FilePath npm.cmd -ArgumentList 'start' -RedirectStandardOutput app.log -RedirectStandardError app.err -PassThru -WindowStyle Hidden; $p.Id | Set-Content app.pid"
                             powershell -NoProfile -Command "$ok = $false; for ($i = 0; $i -lt 30; $i++) { try { Invoke-WebRequest -UseBasicParsing http://localhost:3000/health | Out-Null; $ok = $true; break } catch { Start-Sleep -Seconds 1 } }; if (-not $ok) { Get-Content app.log -ErrorAction SilentlyContinue; Get-Content app.err -ErrorAction SilentlyContinue; exit 1 }"
                         '''
                     }
@@ -79,22 +85,6 @@ pipeline {
 
         failure {
             echo 'Pipeline failed. Check the Jenkins logs.'
-        }
-
-        always {
-            script {
-                if (isUnix()) {
-                    sh '''
-                        if [ -f app.pid ]; then
-                            kill "$(cat app.pid)" || true
-                        fi
-                    '''
-                } else {
-                    bat '''
-                        powershell -NoProfile -Command "if (Test-Path app.pid) { Stop-Process -Id (Get-Content app.pid) -Force -ErrorAction SilentlyContinue }"
-                    '''
-                }
-            }
         }
     }
 }
