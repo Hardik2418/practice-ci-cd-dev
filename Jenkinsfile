@@ -36,9 +36,38 @@ pipeline {
             }
         }
 
+        stage('Start Application') {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh '''
+                            npm start > app.log 2>&1 &
+                            echo $! > app.pid
+
+                            for i in $(seq 1 30); do
+                                if curl -fsS http://localhost:3000/health; then
+                                    exit 0
+                                fi
+
+                                sleep 1
+                            done
+
+                            cat app.log
+                            exit 1
+                        '''
+                    } else {
+                        bat '''
+                            powershell -NoProfile -Command "$p = Start-Process -FilePath npm.cmd -ArgumentList 'start' -RedirectStandardOutput app.log -RedirectStandardError app.err -PassThru -WindowStyle Hidden; $p.Id | Set-Content app.pid"
+                            powershell -NoProfile -Command "$ok = $false; for ($i = 0; $i -lt 30; $i++) { try { Invoke-WebRequest -UseBasicParsing http://localhost:3000/health | Out-Null; $ok = $true; break } catch { Start-Sleep -Seconds 1 } }; if (-not $ok) { Get-Content app.log -ErrorAction SilentlyContinue; Get-Content app.err -ErrorAction SilentlyContinue; exit 1 }"
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Archive Project') {
             steps {
-                archiveArtifacts artifacts: 'src/**, public/**, package.json, package-lock.json', fingerprint: true
+                archiveArtifacts artifacts: 'src/**, public/**, package.json, package-lock.json, app.log, app.err', allowEmptyArchive: true, fingerprint: true
             }
         }
     }
@@ -50,6 +79,22 @@ pipeline {
 
         failure {
             echo 'Pipeline failed. Check the Jenkins logs.'
+        }
+
+        always {
+            script {
+                if (isUnix()) {
+                    sh '''
+                        if [ -f app.pid ]; then
+                            kill "$(cat app.pid)" || true
+                        fi
+                    '''
+                } else {
+                    bat '''
+                        powershell -NoProfile -Command "if (Test-Path app.pid) { Stop-Process -Id (Get-Content app.pid) -Force -ErrorAction SilentlyContinue }"
+                    '''
+                }
+            }
         }
     }
 }
